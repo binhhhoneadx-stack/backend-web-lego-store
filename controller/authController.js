@@ -1,10 +1,9 @@
 import userModel from "../model/user.model.js";
 import userDetailModel from "../model/user.detail.model.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import signToken from "../middleware/signToken.js";
 import sendMail from "../service/sendMail.js";
 import jwt from "jsonwebtoken";
-import { isValidObjectId } from "mongoose";
 import isSendMail from "../service/sendMail.js";
 
 // đăng ký , đăng nhập người dùng
@@ -18,8 +17,7 @@ const SignUpByAccountUser = async (req, res) => {
     if (existUsername) return res.status(400).json("Tên tài khoản đã tồn tại.");
     // Check email
     const reEmail = /^\S+@\S+\.\S+$/;
-    if (!reEmail.test(email))
-      return res.status(400).json("Email không hợp lệ.");
+    if (!reEmail.test(email)) return res.status(400).json("Email không hợp lệ.");
 
     const existEmail = await userModel.findOne({ email });
     if (existEmail) return res.status(400).json("Email đã tồn tại.");
@@ -28,14 +26,13 @@ const SignUpByAccountUser = async (req, res) => {
     // if (!reNumber.test(phone))
     //   return res.status(400).json("Số điện thoại không hợp lệ.");
     // Check password
-    if (password.length < 8)
-      return res.status(400).json("Độ dài mật khẩu tối thiểu 8 ký tự.");
+    if (password.length < 8) return res.status(400).json("Độ dài mật khẩu tối thiểu 8 ký tự.");
     const salt = await bcrypt.genSaltSync(10);
     const hashPassword = await bcrypt.hashSync(password, salt);
     const createUserDetail = new userDetailModel({
       phone,
       birthday,
-      sex
+      sex,
     });
     const createUser = new userModel({
       lastName,
@@ -83,32 +80,20 @@ const SignInByAccountUser = async (req, res) => {
   try {
     const { email, Password } = req.body;
 
-    if (!email || !Password)
-      return res.status(400).json("Vui lòng không để trống trường này.");
+    if (!email || !Password) return res.status(400).json("Vui lòng không để trống trường này.");
     // Check email
     const re = /^\S+@\S+\.\S+$/;
     if (!re.test(email)) return res.status(400).json("Email không hợp lệ.");
-    const existUser = await userModel
-      .findOne({ email })
-      .populate("userDetailId");
-    if (!existUser)
-      return res.status(400).json("Email hoặc Mật khẩu không chính xác.");
+    const existUser = await userModel.findOne({ email }).populate("userDetailId");
+    if (!existUser) return res.status(400).json("Email hoặc Mật khẩu không chính xác.");
 
     // Check password
-    const comparePassword = await bcrypt.compareSync(
-      Password,
-      existUser.password
-    );
-    if (!comparePassword)
-      return res.status(400).json("Email hoặc Mật khẩu không chính xác.");
+    const comparePassword = await bcrypt.compareSync(Password, existUser.password);
+    if (!comparePassword) return res.status(400).json("Email hoặc Mật khẩu không chính xác.");
 
     const { password, ...user } = existUser._doc;
 
-    const token = await jwt.sign(
-      { id: existUser._id },
-      process.env.ACCESS_TOKEN_JWT,
-      { expiresIn: "7d" }
-    );
+    const token = await jwt.sign({ id: existUser._id }, process.env.ACCESS_TOKEN_JWT, { expiresIn: "7d" });
 
     return res.cookie("token", token, { httpOnly: true }).status(200).json({
       mess: "Đăng nhập tài khoản thành công!",
@@ -131,15 +116,13 @@ const SignUpByAccountAdmin = async (req, res) => {
 
     // kiểm tra email
     const reEmail = /^\S+@\S+\.\S+$/;
-    if (!reEmail.test(email))
-      return res.status(400).json("Email không hợp lệ.");
+    if (!reEmail.test(email)) return res.status(400).json("Email không hợp lệ.");
 
     const existEmail = await userModel.findOne({ email });
     if (existEmail) return res.status(400).json("Email đã tồn tại.");
 
     // kiểm tra password
-    if (password.length < 8)
-      return res.status(400).json("Độ dài mật khẩu tối thiểu 8 ký tự.");
+    if (password.length < 8) return res.status(400).json("Độ dài mật khẩu tối thiểu 8 ký tự.");
 
     const salt = await bcrypt.genSaltSync(10);
     const hashPassword = await bcrypt.hashSync(password, salt);
@@ -162,24 +145,17 @@ const SignInByAccountAdmin = async (req, res) => {
   try {
     const { Email, Password } = req.body;
     // kiểm tra rỗng của email và mật khẩu
-    if (!Email || !Password)
-      return res.status(400).json("Vui lòng điền đầy thủ thông tin.");
+    if (!Email || !Password) return res.status(400).json("Vui lòng điền đầy thủ thông tin.");
     const accountAdmin = await userModel.findOne({ email: Email });
     // kiểm tra email
     const regex = /^\S+@\S+\.\S+$/;
     if (!regex.test(Email)) return res.status(400).json("Email không hợp lệ.");
-    if (!accountAdmin)
-      return res.status(400).json("Email hoặc Mật khẩu không chính xác.");
+    if (!accountAdmin) return res.status(400).json("Email hoặc Mật khẩu không chính xác.");
     // kiểm tra mật khẩu
-    const comparePassword = await bcrypt.compare(
-      Password,
-      accountAdmin.password
-    );
-    if (!comparePassword)
-      return res.status(400).json("Email hoặc Mật khẩu không chính xác.");
+    const comparePassword = await bcrypt.compare(Password, accountAdmin.password);
+    if (!comparePassword) return res.status(400).json("Email hoặc Mật khẩu không chính xác.");
     // kiểm tra quyền
-    if (accountAdmin.role !== "Admin")
-      return res.status(400).json("Vui lòng đăng nhập bằng tài khoản admin.");
+    if (accountAdmin.role !== "Admin") return res.status(400).json("Vui lòng đăng nhập bằng tài khoản admin.");
 
     const { password, ...admin } = accountAdmin._doc;
     const token = await signToken(admin);
@@ -280,11 +256,7 @@ const forgetPassword = async (req, res) => {
     isSendMail({ gmail, subject, html });
 
     // tạo thời gian sử dụng mã otp
-    const tokenTimeOtp = await jwt.sign(
-      { id: user._id, otp: OTP },
-      process.env.ACCESS_TOKEN_JWT,
-      { expiresIn: "3m" }
-    );
+    const tokenTimeOtp = await jwt.sign({ id: user._id, otp: OTP }, process.env.ACCESS_TOKEN_JWT, { expiresIn: "3m" });
 
     // lưu mã otp
     user.otp = OTP;
@@ -313,8 +285,7 @@ const interOTP = async (req, res) => {
     // Kiểm tra rỗng OTP
     if (!OTP) return res.status(400).json("Vui lòng nhập mã OTP.");
 
-    if (req.user.otp !== OTP)
-      return res.status(400).json("Mã OTP không chính xác, vui lòng nhập lại.");
+    if (req.user.otp !== OTP) return res.status(400).json("Mã OTP không chính xác, vui lòng nhập lại.");
 
     return res.status(200).json("Xác thực mã OTP thành công.");
   } catch (error) {
@@ -326,18 +297,16 @@ const restPassword = async (req, res) => {
   try {
     const { email, newPassword } = req.body;
     // kiểm tra rỗng
-    if (!newPassword)
-      return res.status(400).json("vui lòng không để trống thông tin.");
+    if (!newPassword) return res.status(400).json("vui lòng không để trống thông tin.");
 
-    if (newPassword.length < 8)
-      return res.status(400).json("Độ dài mật khẩu tối thiếu 8 ký tự.");
+    if (newPassword.length < 8) return res.status(400).json("Độ dài mật khẩu tối thiếu 8 ký tự.");
 
     const user = await userModel.findOne({ email });
 
     if (!user) return res.status(400).json("Không tìm thấy tài khoản!");
 
-    const salt = await bcrypt.genSaltSync(10)
-    const password = await bcrypt.hashSync(newPassword, salt)
+    const salt = await bcrypt.genSaltSync(10);
+    const password = await bcrypt.hashSync(newPassword, salt);
     user.password = password;
     await user.save();
 
@@ -349,16 +318,15 @@ const restPassword = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const id = req.params.id
-    const user = await userModel.findByIdAndDelete(id)
-    if(!user) 
-      return res.status(400).json("Không tìm thấy người dùng.")
+    const id = req.params.id;
+    const user = await userModel.findByIdAndDelete(id);
+    if (!user) return res.status(400).json("Không tìm thấy người dùng.");
 
-    return res.status(200).json("Xóa tài khoản người dùng thành công.")
+    return res.status(200).json("Xóa tài khoản người dùng thành công.");
   } catch (error) {
-    return res.status(500).json(error.message)
+    return res.status(500).json(error.message);
   }
-}
+};
 
 export default {
   SignUpByAccountUser,
@@ -371,5 +339,5 @@ export default {
   SignOut,
   interOTP,
   restPassword,
-  deleteUser
+  deleteUser,
 };
