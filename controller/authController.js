@@ -1,6 +1,6 @@
 import userModel from "../model/user.model.js";
 import userDetailModel from "../model/user.detail.model.js";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import signToken from "../middleware/signToken.js";
 import sendMail from "../service/sendMail.js";
 import jwt from "jsonwebtoken";
