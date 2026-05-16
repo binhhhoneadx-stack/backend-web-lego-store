@@ -21,7 +21,7 @@ main.use(
       "http://localhost:5175",
       "http://localhost:5174",
       "http://localhost:5173",
-      "https://client-eb-lego-store-hua5.vercel.app/",
+      "https://client-eb-lego-store-hua5.vercel.app",
     ], // Đổi thành domain frontend
     methods: ["POST", "GET", "PUT", "DELETE"],
     credentials: true, // Cho phép gửi cookies
