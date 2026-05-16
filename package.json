@@ -14,7 +14,8 @@
     "nodemon": "^3.1.9"
   },
   "scripts": {
-    "start": "nodemon --inspect ./server.js"
+    "dev": "nodemon --inspect ./server.js",
+    "start": "node server.js"
   },
   "name": "server",
   "version": "1.0.0",
